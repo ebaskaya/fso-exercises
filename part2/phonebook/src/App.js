@@ -2,7 +2,7 @@ import { useState , useEffect} from 'react'
 import AddPerson from './components/AddPerson'
 import Entry from './components/Entry'
 import Filter from './components/Filter'
-import axios from 'axios'
+import service from './services/persons'
 
 const App = () => {
   const [persons, setPersons] = useState([]) 
@@ -11,15 +11,18 @@ const App = () => {
   const [filterName, setFilterName] = useState('')
   const [filter, setFilter] = useState(false);
 
+  
+
   useEffect(() => {
-    console.log('effect');
-    axios
-      .get('http://localhost:3001/persons')
-      .then((response) => {
-        console.log('promise fulfilled');
-        setPersons(response.data);
+    service
+      .getAll()
+      .then(data => {
+        setPersons(data)
+        console.log(data)
       })
-  }, [])
+   }, [])
+  
+  
 
   const namesToShow = !filter
   ? persons
@@ -54,15 +57,56 @@ const App = () => {
   const addPerson = (event) => {
     event.preventDefault();
     
-    if(persons.some(person => person.name === newName)){
-      alert(`${newName} already exists. Entry not added`)
+    const foundPerson = persons.find(person => person.name.toLowerCase() === newName.toLowerCase())
+
+    if(foundPerson){
+      if(window.confirm(`${newName} already exists. Update phone number?`)){
+        const updatedPerson = {...foundPerson, number: newNumber}
+        console.log('person', updatedPerson)
+        
+        service
+          .update(updatedPerson.id, updatedPerson)
+          .then(response => 
+            {
+              setPersons(persons.map(p => p.id !== updatedPerson.id ? p : updatedPerson))
+              console.log('data is', response.data)
+            })
+          
+      }
+      
+      
       return;
     }
-    const newEntry = {name: newName, number: newNumber};
-    setPersons(persons.concat(newEntry));
+    
 
-    setNewName('');
-    setNewNumber('');
+    const newEntry = {name: newName, number: newNumber};
+    service
+      .create(newEntry)
+      .then(returnedPerson => {
+        setPersons(persons.concat(returnedPerson))
+        setNewName('');
+        setNewNumber('');
+      }).catch(error => console.log(error, 'hata oldu'))
+      
+  
+
+    
+  }
+
+  const deleteHandler = (event) => {
+    const id = event.target.value
+    const name = event.target.dataset.name
+    
+    
+    if(window.confirm(`delete ${name} with id ${id}?`)){
+      console.log(`deleting ${id}`)
+      service
+        .remove(id)
+        .then(() => setPersons(persons.filter(p => p.id != id)))
+        
+    }
+      
+
   }
 
   
@@ -75,7 +119,7 @@ const App = () => {
       handleNameInput={handleNameInput} newNumber={newNumber}
       handleNumberInput={handleNumberInput}/>
       <h2>Numbers</h2>
-      {namesToShow.map((person) => <Entry key={person.name} person={person} />)}
+      {namesToShow.map((person) => <Entry key={person.name} person={person} deleteHandler={deleteHandler}/>)}
     </div>
   )
 }
