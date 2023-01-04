@@ -66,10 +66,10 @@ const App = () => {
         
         service
           .update(updatedPerson.id, updatedPerson)
-          .then(response => 
+          .then(data => 
             {
-              setPersons(persons.map(p => p.id !== updatedPerson.id ? p : updatedPerson))
-              console.log('data is', response.data)
+              setPersons(persons.map(p => p.id !== updatedPerson.id ? p : data))
+              console.log('data is', data)
             })
           
       }
