@@ -3,6 +3,7 @@ import AddPerson from './components/AddPerson'
 import Entry from './components/Entry'
 import Filter from './components/Filter'
 import service from './services/persons'
+import Message from './components/Message'
 
 const App = () => {
   const [persons, setPersons] = useState([]) 
@@ -10,6 +11,7 @@ const App = () => {
   const [newNumber, setNewNumber] = useState('')
   const [filterName, setFilterName] = useState('')
   const [filter, setFilter] = useState(false);
+  const [messageObject, setMessageObject]= useState(null);
 
   
 
@@ -70,7 +72,14 @@ const App = () => {
             {
               setPersons(persons.map(p => p.id !== updatedPerson.id ? p : data))
               console.log('data is', data)
+              
+              displayMessage(`${data.name} updated`, false)
+              
             })
+          .catch(error => {
+            displayMessage(`${updatedPerson.name} has already been deleted`, true)
+            setPersons(persons.filter(p => p.id != updatedPerson.id))
+          })
           
       }
       
@@ -86,6 +95,7 @@ const App = () => {
         setPersons(persons.concat(returnedPerson))
         setNewName('');
         setNewNumber('');
+        displayMessage(`${returnedPerson.name} added`, false)
       }).catch(error => console.log(error, 'hata oldu'))
       
   
@@ -102,11 +112,25 @@ const App = () => {
       console.log(`deleting ${id}`)
       service
         .remove(id)
-        .then(() => setPersons(persons.filter(p => p.id != id)))
+        .then(() => {
+          setPersons(persons.filter(p => p.id != id))
+          displayMessage(`${name} deleted`, false)
+        })
+        .catch(error => {
+          displayMessage(`${name} has already been deleted`, true)
+          setPersons(persons.filter(p => p.id != id))
+        })
         
     }
       
 
+  }
+
+  const displayMessage = (msg, isError) => {
+    setMessageObject({message: msg, isError: isError})
+    setTimeout(() => {
+      setMessageObject(null)
+    }, 3000)
   }
 
   
@@ -114,6 +138,7 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
+      <Message messageObject={messageObject}/>
       <Filter handleFilterInput={handleFilterInput} filterName={filterName}/>
       <AddPerson addPerson={addPerson} newName={newName} 
       handleNameInput={handleNameInput} newNumber={newNumber}
